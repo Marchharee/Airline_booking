@@ -4,6 +4,7 @@ class AirlineBookingSystem:
         self.rows = 80
         self.cols = ['A', 'B', 'C','X' ,'D', 'E', 'F']
         self.seating_chart = self.initialize_seats()
+        self.generated_references = set()  # Store the generated unique subscription number
     
     def initialize_seats(self):
         """Tag unsubscribed areas ('X') and storage areas ('S')"""
