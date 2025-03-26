@@ -1,13 +1,26 @@
 import random
 import string
+import sqlite3
 
 class AirlineBookingSystem:
     def __init__(self):
-        """Initialize the seat matrix: 80 rows and 6 columns, default "F" is empty"""
+        """Initialize the seat matrix: 80 rows and 7 columns, default "F" is empty"""
         self.rows = 80
-        self.cols = ['A', 'B', 'C','X' ,'D', 'E', 'F']
+        self.cols = ['A', 'B', 'C', 'X','D', 'E', 'F']
         self.seating_chart = self.initialize_seats()
         self.generated_references = set()  # Store the generated unique subscription number
+        self.db_connection()
+    
+    def db_connection(self):
+        self.conn = sqlite3.connect("airline_bookings.db")
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS bookings (
+                                seat TEXT PRIMARY KEY,
+                                booking_ref TEXT UNIQUE,
+                                first_name TEXT,
+                                last_name TEXT,
+                                passport_number TEXT)''')
+        self.conn.commit()
     
     def initialize_seats(self):
         """Tag unsubscribed areas ('X') and storage areas ('S')"""
@@ -37,22 +50,6 @@ class AirlineBookingSystem:
         """Check if the selected seat is within the valid range"""
         return self.seating_chart.get(seat) == 'F'
     
-    def book_seat(self, seat):
-        """Book a seat"""
-        if self.check_availability(seat):
-            self.seating_chart[seat] = 'R' # Check if the seat is available.
-            print(f"Seat {seat} booked successfully!")
-        else:
-            print(f"Seat {seat} is not available.")
-    
-    def free_seat(self, seat):
-        """Free a seat"""
-        if self.seating_chart.get(seat) == 'R':
-            self.seating_chart[seat] = 'F' # If the seat has been booked, it will be restored to an empty seat
-            print(f"Seat {seat} is now free.")
-        else:
-            print(f"Seat {seat} is not currently booked.")
-    
     def generate_booking_reference(self):
      """Generate a unique 8-bit random subscription reference number"""
      while True: # Enter a loop to ensure that the generated number does not repeat.
@@ -60,6 +57,33 @@ class AirlineBookingSystem:
         if reference not in self.generated_references: # Check if the number already exists
             self.generated_references.add(reference)
             return reference
+    
+    def book_seat(self, seat):
+        """Book a seat"""
+        if self.check_availability(seat):
+            self.seating_chart[seat] = 'R' # Check if the seat is available.
+            booking_ref = self.generate_booking_reference()
+            first_name = input("Enter First Name: ")
+            last_name = input("Enter Last Name: ")
+            passport_number = input("Enter Passport Number: ")
+            
+            self.seating_chart[seat] = booking_ref
+            self.cursor.execute("INSERT INTO bookings VALUES (?, ?, ?, ?, ?)", 
+                                (seat, booking_ref, first_name, last_name, passport_number))
+            self.conn.commit()
+            print(f"Seat {seat} booked successfully! Booking Ref: {booking_ref}")
+        else:
+            print(f"Seat {seat} is not available.")
+    
+    def free_seat(self, seat):
+        """Free a seat"""
+        if self.seating_chart.get(seat) == 'R':
+            self.seating_chart[seat] = 'F' # If the seat has been booked, it will be restored to an empty seat
+            self.cursor.execute("DELETE FROM bookings WHERE seat = ?", (seat,))
+            self.conn.commit()
+            print(f"Seat {seat} is now free.")
+        else:
+            print(f"Seat {seat} is not currently booked.")
     
     def menu(self):
         while True:
@@ -79,6 +103,7 @@ class AirlineBookingSystem:
                 self.display_seats()
             elif choice == '5':
                 print("Exiting program.")
+                self.conn.close()
                 break
             else:
                 print("Invalid option.")
@@ -86,3 +111,6 @@ class AirlineBookingSystem:
 if __name__ == "__main__":
     system = AirlineBookingSystem()
     system.menu()
+    
+    
+    
