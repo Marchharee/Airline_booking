@@ -1,3 +1,6 @@
+import random
+import string
+
 class AirlineBookingSystem:
     def __init__(self):
         """Initialize the seat matrix: 80 rows and 6 columns, default "F" is empty"""
@@ -49,6 +52,14 @@ class AirlineBookingSystem:
             print(f"Seat {seat} is now free.")
         else:
             print(f"Seat {seat} is not currently booked.")
+    
+    def generate_booking_reference(self):
+     """Generate a unique 8-bit random subscription reference number"""
+     while True: # Enter a loop to ensure that the generated number does not repeat.
+        reference = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)) # Generate a new 8-digit subscription number
+        if reference not in self.generated_references: # Check if the number already exists
+            self.generated_references.add(reference)
+            return reference
     
     def menu(self):
         while True:
